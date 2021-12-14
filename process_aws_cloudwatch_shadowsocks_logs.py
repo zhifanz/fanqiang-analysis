@@ -4,8 +4,7 @@ import os
 import gzip
 import re
 import logging
-import boto3
-from boto3.dynamodb.conditions import Key
+from domains import Domains
 
 DOMAIN_PATTERN = r'<-> ([\w.-]+\.[\w]+):\d+ '
 
@@ -14,25 +13,18 @@ def decode_events(event):
     cloudwatch_logs_message = json.loads(gzip.decompress(compressed_event_data).decode())
     return cloudwatch_logs_message['logEvents']
 
+
 def extract_domain(message):
     match = re.search(DOMAIN_PATTERN, message)
     if match:
         return match.group(1)
-
-
-def process_domain(domain):
-    logging.info('process domain: ' + domain)
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
-    response = table.query(Select='COUNT', KeyConditionExpression=Key('domainName').eq(domain))
-    if response['Count'] > 0:
-        return
-    table.put_item(Item={'domainName': domain})
     
 
 def handler(event, context):
+    domains = Domains(os.environ['DYNAMODB_TABLE'])
     for log_event in decode_events(event):
         log_message = log_event['message']
         domain = extract_domain(log_message)
         if domain:
-            process_domain(domain)
+            logging.info('process domain: ' + domain)
+            domains.update_domain(domain, log_event['timestamp'])

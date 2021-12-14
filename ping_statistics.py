@@ -5,7 +5,7 @@ from subprocess import TimeoutExpired, CalledProcessError, SubprocessError
 
 from domains import Domains
 
-IP_PATTERN = r'PING.+\(([\d.]+)\).+bytes of data'
+IP_PATTERN = r'PING.+ \(([\d.]+)\) '
 COUNT_PATTERN = r'(\d+).+transmitted,.+(\d+).+received'
 LATENCY_PATTERN = r'min/avg/max/mdev = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+) ms'
 
@@ -39,14 +39,17 @@ def ping(domain, count):
     except (TimeoutExpired, CalledProcessError) as err:
         return {'code': 2, 'message': err.stderr}
 
-    
-def main():
+
+def arg_parser():
     parser = argparse.ArgumentParser(description='Test network latency and save statistics to dynamodb.')
     parser.add_argument('--days', help='domains within last days to scan for ping statistics', type=int, default=30)
     parser.add_argument('--pingcount', help='-c option for ping command', type=int, default=10)
     parser.add_argument('table', help='dynamodb table name')
     parser.add_argument('continent', help='continent where this program is run from')
-    args = parser.parse_args()
+    return parser;
+
+def main():
+    args = arg_parser().parse_args()
     if args.days > MAX_ALLOW_SCAN_DAYS:
         raise RuntimeError(f'Scan days must less than {MAX_ALLOW_SCAN_DAYS}')
     domains = Domains(args.table)

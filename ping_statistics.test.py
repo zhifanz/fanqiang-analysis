@@ -1,6 +1,6 @@
 import unittest
 
-from ping_statistics import parse_statistics
+from ping_statistics import arg_parser, parse_statistics, ping
 
 
 class TestMain(unittest.TestCase):
@@ -21,6 +21,18 @@ rtt min/avg/max/mdev = 62.263/68.017/75.407/4.884 ms
         self.assertEqual(75.407, statistics['max'])
         self.assertEqual(4.884, statistics['mdev'])
 
+    def test_parse_args(self):
+        args = arg_parser().parse_args(['--days', '3', '--pingcount', '5', 'domains', 'ap'])
+        self.assertEqual(args.days, 3)
+        self.assertEqual(args.pingcount, 5)
+        self.assertEqual(args.table, 'domains')
+        self.assertEqual(args.continent, 'ap')
+
+    def test_ping(self):
+        result = ping('google.com', 5)
+        self.assertEqual(result['code'], 0)
+        self.assertEqual(result['message'], 'success')
+        self.assertIsNotNone(result['statistics'])
 
 if __name__ == '__main__':
     unittest.main()
