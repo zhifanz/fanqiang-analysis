@@ -27,7 +27,7 @@ def save_bucket(rules):
             ACL = 'public-read',
             Body = to_yaml_payload(r['domains']).encode(),
             ContentType = 'text/plain',
-            Key = os.environ['OBJECT_PATH_PREFIX'] + '_' + r['name'] + ".yaml"
+            Key = f"{os.environ['CONFIG_ROOT_PATH']}/domains_{r['name']}.yaml"
         )
 
 def routing_rules(items):
@@ -58,4 +58,4 @@ def routing_rules(items):
 
 def handler(event, context):
     domains = Domains(os.environ['DYNAMODB_TABLE'])
-    save_bucket(routing_rules(domains.scanStatistics(os.environ['DAYS_TO_SCAN'])))
+    save_bucket(routing_rules(domains.scanStatistics(int(os.environ['DAYS_TO_SCAN']))))

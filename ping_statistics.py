@@ -46,7 +46,7 @@ def arg_parser():
     parser.add_argument('--pingcount', help='-c option for ping command', type=int, default=10)
     parser.add_argument('table', help='dynamodb table name')
     parser.add_argument('continent', help='continent where this program is run from')
-    return parser;
+    return parser
 
 def main():
     args = arg_parser().parse_args()
