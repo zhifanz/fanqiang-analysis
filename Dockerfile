@@ -1,7 +1,6 @@
 FROM public.ecr.aws/lambda/python:3.8 as base
 
 COPY . ${LAMBDA_TASK_ROOT}/
-RUN pip3 install -r ${LAMBDA_TASK_ROOT}/requirements.txt --target "${LAMBDA_TASK_ROOT}"
 
 FROM base as fanqiang-extract-domain
 CMD [ "process_aws_cloudwatch_shadowsocks_logs.handler" ]
