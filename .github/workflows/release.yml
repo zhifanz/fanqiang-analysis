@@ -34,7 +34,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: public.ecr.aws/k9s8j7g6/${{ matrix.bin }}
+          images: public.ecr.aws/${{ github.actor }}/${{ matrix.bin }}
           tags: |
             type=semver,pattern={{version}}
 
