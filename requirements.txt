@@ -1,1 +1,1 @@
-boto3[crt]
+boto3[crt]==1.17.*
