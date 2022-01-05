@@ -1,8 +1,9 @@
 import os
 import boto3
-from domains import Domains
+from domains import Domain, DomainRepository
 
-MAX_PING_MS = 10000
+Rules = dict[str, list[str]]
+
 
 def to_yaml_payload(domains):
     if domains:
@@ -10,52 +11,36 @@ def to_yaml_payload(domains):
     else:
         return 'payload: []'
 
-def is_ping_success(ping):
-    return ping and ping['code'] == 0 and ping['statistics']['transmitted'] == ping['statistics']['received']
 
-def ping_key(candidate):
-    ping = candidate['ping']
-    if not ping or ping['code'] > 0:
-        return MAX_PING_MS
-    return ping['statistics']['avg']
-
-def save_bucket(rules):
+def save_bucket(rules: Rules) -> None:
     s3 = boto3.client('s3')
     bucket = s3.Bucket(os.environ['BUCKET'])
-    for r in rules:
+    for key in rules:
         bucket.put_object(
-            ACL = 'public-read',
-            Body = to_yaml_payload(r['domains']).encode(),
-            ContentType = 'text/plain',
-            Key = f"{os.environ['CONFIG_ROOT_PATH']}/domains_{r['name']}.yaml"
+            ACL='public-read',
+            Body=to_yaml_payload(rules[key]).encode(),
+            ContentType='text/plain',
+            Key=f"{os.environ['CONFIG_ROOT_PATH']}/domains_{key}.yaml"
         )
 
-def routing_rules(items):
-    cn = []
-    ap = []
-    eu = []
+
+def routing_rules(items: list[Domain], continents: list[str]) -> Rules:
+    rules = {'domestic': []}
+    for c in continents:
+        rules[c] = []
     for item in items:
-        if is_ping_success(item.get('ping_cn')):
-            cn.append(item['domainName'])
+        if item.globalPingResults.available_from_domestic():
+            rules['domestic'].append(item.domainName)
             continue
-        
-        candidates = [
-            {'name': 'na', 'ping': item.get('ping_na')},
-            {'name': 'ap', 'ping': item.get('ping_ap')},
-            {'name': 'eu', 'ping': item.get('ping_eu')}
-        ]
-        candidates.sort(key=ping_key)
-        if candidates[0]['name'] == 'ap':
-            ap.append(item['domainName'])
-        elif candidates[0]['name'] == 'eu':
-            eu.append(item['domainName'])
-    return [
-        {'name': 'domestic', 'domains': cn},
-        {'name': 'ap', 'domains': ap},
-        {'name': 'eu', 'domains': eu}
-    ]
+        fast_continent = item.globalPingResults.select_fast_proxy()
+        if fast_continent:
+            rules[fast_continent].append(item.domainName)
+    return rules
 
 
 def handler(event, context):
-    domains = Domains(os.environ['DYNAMODB_TABLE'])
-    save_bucket(routing_rules(domains.scanStatistics(int(os.environ['DAYS_TO_SCAN']))))
+    domains = DomainRepository(os.environ['DYNAMODB_TABLE'])
+    continents = os.environ['CONTINENTS'].split(',')
+    rules = routing_rules(domains.scan(
+        int(os.environ['DAYS_TO_SCAN'])), continents)
+    save_bucket(rules)
