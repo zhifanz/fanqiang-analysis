@@ -17,7 +17,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
+      - name: Create archive
+        run: zip fanqiang-analysis-${{ github.ref_name }}.zip calculate_routing_rules.py domains.py ping_statistics.py process_aws_cloudwatch_shadowsocks_logs.py requirements.txt
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: fanqiang-analysis-${{ github.ref_name }}.zip
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
