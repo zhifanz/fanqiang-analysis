@@ -1,4 +1,5 @@
 import unittest
+from decimal import Decimal
 
 from ping_statistics import arg_parser, parse_statistics, ping
 
@@ -16,10 +17,10 @@ rtt min/avg/max/mdev = 62.263/68.017/75.407/4.884 ms
         self.assertEqual('220.181.38.148', statistics.destPublicIp)
         self.assertEqual(10, statistics.transmitted)
         self.assertEqual(5, statistics.received)
-        self.assertEqual(62.263, statistics.min)
-        self.assertEqual(68.017, statistics.avg)
-        self.assertEqual(75.407, statistics.max)
-        self.assertEqual(4.884, statistics.mdev)
+        self.assertEqual(Decimal('62.263'), statistics.min)
+        self.assertEqual(Decimal('68.017'), statistics.avg)
+        self.assertEqual(Decimal('75.407'), statistics.max)
+        self.assertEqual(Decimal('4.884'), statistics.mdev)
 
     def test_parse_args(self):
         args = arg_parser().parse_args(
@@ -30,7 +31,7 @@ rtt min/avg/max/mdev = 62.263/68.017/75.407/4.884 ms
         self.assertEqual(args.continent, 'ap')
 
     def test_ping(self):
-        result = ping('google.com', 5)
+        result = ping('bing.com', 5)
         self.assertEqual(result.code, 0)
         self.assertEqual(result.message, 'success')
         self.assertIsNotNone(result.statistics)

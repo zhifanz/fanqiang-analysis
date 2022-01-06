@@ -1,4 +1,3 @@
-
 import boto3
 import time
 import sys
@@ -42,65 +41,41 @@ class GlobalPingResults:
         return self._available_from('domestic')
 
     def select_fast_proxy(self) -> str:
-        if 'auto' not in self.ping_results:
-            return None
-        id = 'auto'
+        if 'central' not in self.ping_results:
+            return ''
+        continent = 'central'
         min_avg = sys.float_info.max
         for k in self.ping_results:
             if k == 'domestic':
                 continue
-            if self.ping_results[k].statistics.code == 0 and self.ping_results[k].statistics.avg < min_avg:
-                id = k
+            if self.ping_results[k].code == 0 and self.ping_results[k].statistics.avg < min_avg:
+                continent = k
                 min_avg = self.ping_results[k].statistics.avg
-        return None if id == 'auto' else id
+        return None if continent == 'central' else continent
 
 
 class Domain:
     def __init__(self, data) -> None:
         self.domainName = data['domainName']
         self.lastAccessEpoch = data['lastAccessEpoch']
-        globalPingResults = {}
+        ping_results = {}
         for k in data['globalPingResults']:
             ping_result_dict = data['globalPingResults'][k]
             statistics = None
-            if 'statistics' in ping_result_dict:
+            if 'statistics' in ping_result_dict and ping_result_dict['statistics']:
                 statistics = PingStatistics()
                 statistics.__dict__.update(**ping_result_dict['statistics'])
-            globalPingResults[k] = PingResult(ping_result_dict['code'],
-                                              ping_result_dict['message'], statistics)
-        self.globalPingResults = globalPingResults
-
-
-class PingStatisticsBatchUpdate:
-    def __init__(self, batch) -> None:
-        self.batch = batch
-
-    def _update(self, domain_name: str, key: str, ping_result: PingResult):
-        self.batch.update_item(
-            Key={'domainName': domain_name},
-            UpdateExpression=f'SET globalPingResults.{key} = :v',
-            ExpressionAttributeValues={':v': ping_result.to_dict()})
-
-    def update_domestic(self, domain_name: str, ping_result: PingResult):
-        self._update(domain_name, 'domestic', ping_result)
-
-    def update_auto(self, domain_name: str, ping_result: PingResult):
-        self._update(domain_name, 'auto', ping_result)
-
-    def update_continent(self, domain_name: str, continent: str, ping_result: PingResult):
-        self._update(domain_name, continent, ping_result)
-
-    def close(self):
-        self.batch.close()
+            ping_results[k] = PingResult(ping_result_dict['code'], ping_result_dict['message'], statistics)
+        self.globalPingResults = GlobalPingResults(ping_results)
 
 
 class DomainRepository:
-    def __init__(self, name):
-        dynamodb = boto3.resource('dynamodb')
+    def __init__(self, name, endpoint_url=None):
+        dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url)
         self.table = dynamodb.Table(name)
 
-    def _cut_time(days_to_scan):
-        return (time.time() - timedelta(days=days_to_scan).total_seconds()) * 1000
+    def _cut_time(self, days_to_scan) -> int:
+        return int(time.time() - timedelta(days=days_to_scan).total_seconds()) * 1000
 
     def scan_domain_names(self, days_to_scan) -> list[str]:
         fe = Attr('lastAccessEpoch').gte(self._cut_time(days_to_scan))
@@ -108,7 +83,7 @@ class DomainRepository:
         response = self.table.scan(
             FilterExpression=fe, ProjectionExpression='domainName')
         items.extend(response['Items'])
-        while response['LastEvaluatedKey']:
+        while 'LastEvaluatedKey' in response:
             response = self.table.scan(
                 FilterExpression=fe, ExclusiveStartKey=response['LastEvaluatedKey'])
             items.extend(response['Items'])
@@ -119,16 +94,28 @@ class DomainRepository:
         items = []
         response = self.table.scan(FilterExpression=fe)
         items.extend(response['Items'])
-        while response['LastEvaluatedKey']:
-            response = self.table.scan(FilterExpression=fe)
+        while 'LastEvaluatedKey' in response:
+            response = self.table.scan(FilterExpression=fe, ExclusiveStartKey=response['LastEvaluatedKey'])
             items.extend(response['Items'])
-        return items
+        return [Domain(e) for e in items]
 
-    def batch_update_ping_statistics(self) -> PingStatisticsBatchUpdate:
-        return PingStatisticsBatchUpdate(self.table.batch_writer())
+    def _update(self, domain_name: str, key: str, ping_result: PingResult):
+        self.table.update_item(
+            Key={'domainName': domain_name},
+            UpdateExpression=f'SET globalPingResults.{key} = :v',
+            ExpressionAttributeValues={':v': ping_result.to_dict()})
+
+    def update_domestic(self, domain_name: str, ping_result: PingResult):
+        self._update(domain_name, 'domestic', ping_result)
+
+    def update_auto(self, domain_name: str, ping_result: PingResult):
+        self._update(domain_name, 'central', ping_result)
+
+    def update_continent(self, domain_name: str, continent: str, ping_result: PingResult):
+        self._update(domain_name, continent, ping_result)
 
     def update_domain(self, domain, access_epoch_ms):
         self.table.update_item(
             Key={'domainName': domain},
-            UpdateExpression='SET lastAccessEpoch = :v',
-            ExpressionAttributeValues={':v': access_epoch_ms})
+            UpdateExpression='SET lastAccessEpoch = :v1, globalPingResults = :v2',
+            ExpressionAttributeValues={':v1': access_epoch_ms, ':v2': {}})
