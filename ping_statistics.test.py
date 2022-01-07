@@ -12,13 +12,13 @@ class TestMain(unittest.TestCase):
 PING baidu.com (220.181.38.148) 56(84) bytes of data.
 
 --- baidu.com ping statistics ---
-10 packets transmitted, 5 received, 0% packet loss, time 4016ms
+20 packets transmitted, 10 received, 0% packet loss, time 4016ms
 rtt min/avg/max/mdev = 62.263/68.017/75.407/4.884 ms
         """
         statistics = parse_statistics(stdout)
         self.assertEqual('220.181.38.148', statistics.destPublicIp)
-        self.assertEqual(10, statistics.transmitted)
-        self.assertEqual(5, statistics.received)
+        self.assertEqual(20, statistics.transmitted)
+        self.assertEqual(10, statistics.received)
         self.assertEqual(Decimal('62.263'), statistics.min)
         self.assertEqual(Decimal('68.017'), statistics.avg)
         self.assertEqual(Decimal('75.407'), statistics.max)
@@ -38,7 +38,9 @@ rtt min/avg/max/mdev = 62.263/68.017/75.407/4.884 ms
         self.assertEqual(result.message, 'success')
         self.assertIsNotNone(result.statistics)
 
-    def test_main(self):
+
+class IntegrationTestMain(unittest.TestCase):
+    def test_update_domain(self):
         test_helper.create_dynamodb_table('domains', endpoint_url='http://localhost:8000')
         try:
             repository = DomainRepository('domains', endpoint_url='http://localhost:8000')

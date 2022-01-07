@@ -7,7 +7,7 @@ from subprocess import TimeoutExpired, CalledProcessError
 from domains import DomainRepository, PingResult, PingStatistics
 
 IP_PATTERN = r'PING.+ \(([\d.]+)\) '
-COUNT_PATTERN = r'(\d+).+transmitted,.+(\d+).+received'
+COUNT_PATTERN = r'^(\d+) packets transmitted, (\d+) received'
 LATENCY_PATTERN = r'min/avg/max/mdev = ([\d.]+)/([\d.]+)/([\d.]+)/([\d.]+) ms'
 
 MAX_ALLOW_SCAN_DAYS = 90
