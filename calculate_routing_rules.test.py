@@ -1,6 +1,8 @@
 import unittest
 
 from calculate_routing_rules import routing_rules
+from domains import DomainRepository
+import test_helper
 
 
 class MockGlobalPingResults:
@@ -33,6 +35,14 @@ class TestMain(unittest.TestCase):
         )
         self.assertDictEqual(
             {'domestic': ['d4'], 'c1': ['d1'], 'c2': ['d2'], 'c3': []}, rules)
+
+    def test_main(self):
+        test_helper.create_dynamodb_table('domains', endpoint_url='http://localhost:8000')
+        try:
+            repository = DomainRepository('domains', endpoint_url='http://localhost:8000')
+            routing_rules(repository.scan(30), ['eu', 'ap'])
+        finally:
+            test_helper.delete_dynamodb_table('domains', endpoint_url='http://localhost:8000')
 
 
 if __name__ == '__main__':

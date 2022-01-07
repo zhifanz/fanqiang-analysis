@@ -1,4 +1,5 @@
 **/*.test.py
-lambda/
+test_helper.py
 .gitignore
 LICENSE
+.github

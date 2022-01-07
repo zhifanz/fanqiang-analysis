@@ -1,7 +1,9 @@
 import unittest
 from decimal import Decimal
 
-from ping_statistics import arg_parser, parse_statistics, ping
+import test_helper
+from domains import DomainRepository
+from ping_statistics import arg_parser, parse_statistics, ping, Runner
 
 
 class TestMain(unittest.TestCase):
@@ -35,6 +37,17 @@ rtt min/avg/max/mdev = 62.263/68.017/75.407/4.884 ms
         self.assertEqual(result.code, 0)
         self.assertEqual(result.message, 'success')
         self.assertIsNotNone(result.statistics)
+
+    def test_main(self):
+        test_helper.create_dynamodb_table('domains', endpoint_url='http://localhost:8000')
+        try:
+            repository = DomainRepository('domains', endpoint_url='http://localhost:8000')
+            repository.update_domain('baidu.com', 100000000)
+            repository.update_domain('bing.com', 100000000)
+            repository.update_domain('aliyun.com', 100000000)
+            Runner(repository, 30, 10, 'domestic').run()
+        finally:
+            test_helper.delete_dynamodb_table('domains', endpoint_url='http://localhost:8000')
 
 
 if __name__ == '__main__':

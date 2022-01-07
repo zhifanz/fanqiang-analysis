@@ -45,8 +45,8 @@ def ping(domain, count) -> PingResult:
 
 
 class Runner:
-    def __init__(self, table, days, pingcount, continent):
-        self.repository = DomainRepository(table)
+    def __init__(self, repository, days, pingcount, continent):
+        self.repository = repository
         self.days = days
         self.pingcount = pingcount
         self.continent = continent
@@ -80,7 +80,8 @@ def main():
     args = arg_parser().parse_args()
     if args.days > MAX_ALLOW_SCAN_DAYS:
         raise RuntimeError(f'Scan days must less than {MAX_ALLOW_SCAN_DAYS}')
-    Runner(args.table, args.days, args.pingcount, args.continent).run()
+    repository = DomainRepository(args.table)
+    Runner(repository, args.days, args.pingcount, args.continent).run()
 
 
 if __name__ == '__main__':

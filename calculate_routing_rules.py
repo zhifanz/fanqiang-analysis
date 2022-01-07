@@ -39,8 +39,8 @@ def routing_rules(items: list[Domain], continents: list[str]) -> Rules:
 
 
 def handler(event, context):
-    domains = DomainRepository(os.environ['DYNAMODB_TABLE'])
+    repository = DomainRepository(os.environ['DYNAMODB_TABLE'])
     continents = os.environ['CONTINENTS'].split(',')
-    rules = routing_rules(domains.scan(
+    rules = routing_rules(repository.scan(
         int(os.environ['DAYS_TO_SCAN'])), continents)
     save_bucket(rules)
