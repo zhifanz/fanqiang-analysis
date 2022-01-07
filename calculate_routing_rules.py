@@ -13,7 +13,7 @@ def to_yaml_payload(domains):
 
 
 def save_bucket(rules: Rules) -> None:
-    s3 = boto3.client('s3')
+    s3 = boto3.resource('s3')
     bucket = s3.Bucket(os.environ['BUCKET'])
     for key in rules:
         bucket.put_object(
