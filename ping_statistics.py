@@ -66,6 +66,7 @@ class Runner:
 def arg_parser():
     parser = argparse.ArgumentParser(
         description='Test network latency and save statistics to dynamodb.')
+    parser.add_argument('--region', help='aws dynamodb region', default='us-east-1')
     parser.add_argument(
         '--days', help='domains within last days to scan for ping statistics', type=int, default=30)
     parser.add_argument(
@@ -80,7 +81,7 @@ def main():
     args = arg_parser().parse_args()
     if args.days > MAX_ALLOW_SCAN_DAYS:
         raise RuntimeError(f'Scan days must less than {MAX_ALLOW_SCAN_DAYS}')
-    repository = DomainRepository(args.table)
+    repository = DomainRepository(args.table, region_name=args.region)
     Runner(repository, args.days, args.pingcount, args.continent).run()
 
 

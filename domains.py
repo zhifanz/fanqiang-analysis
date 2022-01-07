@@ -70,8 +70,8 @@ class Domain:
 
 
 class DomainRepository:
-    def __init__(self, name, endpoint_url=None):
-        dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url)
+    def __init__(self, name, endpoint_url=None, region_name=None):
+        dynamodb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=region_name)
         self.table = dynamodb.Table(name)
 
     def _cut_time(self, days_to_scan) -> int:
