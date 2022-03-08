@@ -1,0 +1,5 @@
+PING www.a.shifen.com (14.215.177.38): 56 data bytes
+
+--- www.a.shifen.com ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 0.113/0.223/0.292/0.078 ms
