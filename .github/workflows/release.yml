@@ -17,7 +17,7 @@ jobs:
       - name: Build python project
         run: |
           pip install pipenv
-          pipenv install --dev
+          pipenv sync --dev --system
           python -m build
       - name: Release
         uses: softprops/action-gh-release@v1
