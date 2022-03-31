@@ -4,14 +4,20 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fra = {editable = true, path = "."}
+fabric = "*"
+jc = "*"
+google-cloud-bigquery = "*"
+google-cloud-firestore = "*"
 
 [dev-packages]
 black = "*"
 flake8 = "*"
-setuptools = "*"
 pytest = "*"
-build = "*"
+pulumi = "*"
+pulumi-aws = "*"
+pulumi-alicloud = "*"
+pulumi-gcp = "*"
+cryptography = "*"
 
 [requires]
 python_version = "3.9"

@@ -1,6 +1,7 @@
 import jc
 import fabric
-from invoke.exceptions import *
+from invoke.exceptions import Failure, ThreadException
+from paramiko import PKey
 
 
 class RemoteCommandError(RuntimeError):
@@ -30,14 +31,20 @@ class PingResult:
 
 
 class DigResult:
-    def __init__(self, a: set[str] = set(), cname: str = None) -> None:
+    def __init__(self, a: set[str] = set()) -> None:
         self.a = a
-        self.cname = cname
 
 
 class ShellAgent:
-    def __init__(self, host: str, user: str) -> None:
-        self.connection = fabric.Connection(host, user=user)
+    def __init__(self, host: str, user: str, pkey: PKey = None) -> None:
+        if pkey:
+            self.connection = fabric.Connection(
+                host,
+                user=user,
+                connect_kwargs={"pkey": pkey},
+            )
+        else:
+            self.connection = fabric.Connection(host, user=user)
 
     def _run_command(self, command: str):
         cmd_name = command.split(" ")[0]
@@ -49,7 +56,7 @@ class ShellAgent:
             raise RemoteCommandError(f"Output of command {cmd_name} is empty")
         try:
             return jc.parse(cmd_name, result.stdout)
-        except:
+        except BaseException:
             raise RemoteCommandError(
                 f"Failed to parse {cmd_name} stdout: {result.stdout}"
             )
@@ -69,18 +76,9 @@ class ShellAgent:
     def dig(self, host: str) -> DigResult:
         dig_result = DigResult()
         for result in self._run_command(f"dig {host} A {host} CNAME"):
-            if result["status"] != "NOERROR":
+            if result["status"] != "NOERROR" or result["answer_num"] < 1:
                 continue
             for answer in result["answer"]:
                 if answer["type"] == "A":
                     dig_result.a.add(answer["data"])
-                elif answer["type"] == "CNAME":
-                    dig_result.cname = answer["data"]
-                else:
-                    continue
         return dig_result
-
-
-if __name__ == "__main__":
-    result = ShellAgent("52.87.148.169", "ec2-user").dig("mail.google.com")
-    print(result)
