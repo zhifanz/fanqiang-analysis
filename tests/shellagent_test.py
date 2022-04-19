@@ -14,17 +14,6 @@ from cryptography.hazmat.primitives import serialization
 from minerule.shellagent import RemoteCommandError, ShellAgent
 
 
-def test_ed25519():
-    key_pair = Ed25519()
-    assert key_pair.public_key.decode("ascii")
-    assert key_pair.private_key.decode("ascii")
-
-
-def test_pkey():
-    with open("/Users/zhifan/.ssh/id_ed25519", mode="rb") as f:
-        assert paramiko.Ed25519Key.from_private_key(f)
-
-
 class TestShellAgent:
     def test_ssh_auth_central(self, central_shell: ShellAgent):
         result = central_shell.connection.run("echo -n hello", hide=True)
@@ -58,14 +47,6 @@ class TestShellAgent:
         with pytest.raises(RemoteCommandError):
             domestic_shell.ping("google.com", 10)
 
-    def test_dig_central(self, central_shell: ShellAgent):
-        result = central_shell.dig("baidu.com")
-        assert len(result.a) > 0
-
-    def test_dig_domestic(self, domestic_shell: ShellAgent):
-        result = domestic_shell.dig("baidu.com")
-        assert len(result.a) > 0
-
     def test_jc_ping(self):
         content = (pathlib.Path(__file__).parent / "ping_stdout").read_text()
         result = jc.parse("ping", content)
@@ -76,11 +57,6 @@ class TestShellAgent:
         assert result["round_trip_ms_avg"] == 0.223
         assert result["round_trip_ms_max"] == 0.292
         assert result["round_trip_ms_stddev"] == 0.078
-
-    def test_jc_dig(self):
-        content = (pathlib.Path(__file__).parent / "dig_stdout").read_text()
-        result = jc.parse("dig", content)
-        assert result[0]["answer_num"] == 2
 
 
 class Ed25519:

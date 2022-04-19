@@ -8,6 +8,8 @@ fabric = "*"
 jc = "*"
 google-cloud-bigquery = "*"
 google-cloud-firestore = "*"
+redshift-connector = "*"
+domain-utils = "*"
 
 [dev-packages]
 black = "*"
@@ -18,6 +20,7 @@ pulumi-aws = "*"
 pulumi-alicloud = "*"
 pulumi-gcp = "*"
 cryptography = "*"
+boto3 = "*"
 
 [requires]
 python_version = "3.9"

@@ -1,3 +1,4 @@
+from decimal import Decimal
 import jc
 import fabric
 from invoke.exceptions import Failure, ThreadException
@@ -16,10 +17,10 @@ class PingResult:
         destination_ip: str = None,
         packets_transmitted: int = None,
         packets_received: int = None,
-        round_trip_ms_min: float = None,
-        round_trip_ms_avg: float = None,
-        round_trip_ms_max: float = None,
-        round_trip_ms_stddev: float = None,
+        round_trip_ms_min: Decimal = None,
+        round_trip_ms_avg: Decimal = None,
+        round_trip_ms_max: Decimal = None,
+        round_trip_ms_stddev: Decimal = None,
     ) -> None:
         self.destination_ip = destination_ip
         self.packets_transmitted = packets_transmitted
@@ -28,11 +29,6 @@ class PingResult:
         self.round_trip_ms_avg = round_trip_ms_avg
         self.round_trip_ms_max = round_trip_ms_max
         self.round_trip_ms_stddev = round_trip_ms_stddev
-
-
-class DigResult:
-    def __init__(self, a: set[str] = set()) -> None:
-        self.a = a
 
 
 class ShellAgent:
@@ -63,22 +59,31 @@ class ShellAgent:
 
     def ping(self, host: str, count: int) -> PingResult:
         result = self._run_command(f"ping -c{count} -q {host}")
-        statistics = PingResult()
-        statistics.destination_ip = result["destination_ip"]
-        statistics.packets_transmitted = result["packets_transmitted"]
-        statistics.packets_received = result["packets_received"]
-        statistics.round_trip_ms_min = result["round_trip_ms_min"]
-        statistics.round_trip_ms_avg = result["round_trip_ms_avg"]
-        statistics.round_trip_ms_max = result["round_trip_ms_max"]
-        statistics.round_trip_ms_stddev = result["round_trip_ms_stddev"]
-        return statistics
-
-    def dig(self, host: str) -> DigResult:
-        dig_result = DigResult()
-        for result in self._run_command(f"dig {host} A {host} CNAME"):
-            if result["status"] != "NOERROR" or result["answer_num"] < 1:
-                continue
-            for answer in result["answer"]:
-                if answer["type"] == "A":
-                    dig_result.a.add(answer["data"])
-        return dig_result
+        if result.keys() >= {
+            "destination_ip",
+            "packets_transmitted",
+            "packets_received",
+        }:
+            statistics = PingResult()
+            statistics.destination_ip = result["destination_ip"]
+            statistics.packets_transmitted = result["packets_transmitted"]
+            statistics.packets_received = result["packets_received"]
+            if "round_trip_ms_min" in result:
+                statistics.round_trip_ms_min = Decimal.from_float(
+                    result["round_trip_ms_min"]
+                )
+            if "round_trip_ms_avg" in result:
+                statistics.round_trip_ms_avg = Decimal.from_float(
+                    result["round_trip_ms_avg"]
+                )
+            if "round_trip_ms_max" in result:
+                statistics.round_trip_ms_max = Decimal.from_float(
+                    result["round_trip_ms_max"]
+                )
+            if "round_trip_ms_stddev" in result:
+                statistics.round_trip_ms_stddev = Decimal.from_float(
+                    result["round_trip_ms_stddev"]
+                )
+            return statistics
+        else:
+            raise RemoteCommandError("Missing key attributes from ping result")
